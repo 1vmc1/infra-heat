@@ -1,0 +1,33 @@
+heat_template_version: 2016-10-14
+
+description: >
+  Simple template to create a server for project deployment
+
+parameters:
+  key_name:
+    type: string
+    description: Name of an existing keypair to enable SSH access
+
+  image:
+    type: string
+    description: Image ID or name to use for the server
+
+  flavor:
+    type: string
+    description: Flavor to use for the server
+
+resources:
+  my_server:
+    type: OS::Nova::Server
+    properties:
+      name: project-server
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - network: 192.168.199.5  # замените на вашу сеть
+
+outputs:
+  server_ip:
+    description: IP address of the created server
+    value: { get_attr: [my_server, first_address] }
