@@ -1,0 +1,32 @@
+pipeline {
+  agent any
+
+  environment {
+    OS_CLOUD = 'mycloud'
+    STACK_NAME = 'project-stack'
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git 'git@github.com:1vmc1/infra-heat.git'
+      }
+    }
+
+    stage('Deploy Stack') {
+      steps {
+        script {
+          sh """
+            openstack stack create -t server.yaml \\
+              --parameter key_name=vmc \\
+              --parameter image=ubuntu-22.04 \\
+              --parameter flavor=m1.small \\
+              ${STACK_NAME}
+          """
+          sh "openstack stack wait ${STACK_NAME}"
+          sh "openstack stack output show ${STACK_NAME} server_ip -f value"
+        }
+      }
+    }
+  }
+}
