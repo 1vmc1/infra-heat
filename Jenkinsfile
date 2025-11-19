@@ -22,7 +22,16 @@ pipeline {
     stage('Deploy Stack') {
       steps {
         script {
-          def stackExists = sh(script: "openstack stack list -f value -c 'Stack Name' | grep -w ${env.STACK_NAME} || true", returnStdout: true).trim()
+          // Включаем вывод команд для отладки
+          sh 'set -x'
+
+          // Проверяем, существует ли стек
+          def stackExists = sh(
+            script: "openstack stack list -f value -c 'Stack Name' | grep -w ${env.STACK_NAME} || true",
+            returnStdout: true
+          ).trim()
+          echo "Stack exists: ${stackExists}"
+
           if (stackExists) {
             sh """
               openstack stack update -t server.yaml \\
@@ -40,8 +49,15 @@ pipeline {
                 ${env.STACK_NAME}
             """
           }
+
+          // Ждём завершения операции
           sh "openstack stack wait ${env.STACK_NAME}"
-          def serverIp = sh(script: "openstack stack output show ${env.STACK_NAME} server_ip -f value", returnStdout: true).trim()
+
+          // Получаем IP сервера из вывода стека
+          def serverIp = sh(
+            script: "openstack stack output show ${env.STACK_NAME} server_ip -f value",
+            returnStdout: true
+          ).trim()
           echo "Server IP: ${serverIp}"
         }
       }
