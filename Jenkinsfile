@@ -10,6 +10,7 @@ pipeline {
     string(name: 'KEY_NAME', defaultValue: 'vmc', description: 'SSH Key Name')
     string(name: 'IMAGE', defaultValue: 'ubuntu-22.04', description: 'Image Name')
     string(name: 'FLAVOR', defaultValue: 'm1.small', description: 'Flavor')
+    string(name: 'NETWORK_NAME', defaultValue: 'sutdents-net', description: 'OpenStack Network Name or ID')
   }
 
   stages {
@@ -22,10 +23,10 @@ pipeline {
     stage('Deploy Stack') {
       steps {
         script {
-          // Включаем вывод команд для отладки
-          sh 'set -x'
+          echo "Starting Deploy Stack stage"
 
-          // Проверяем, существует ли стек
+          sh 'set -x'  // включаем вывод команд
+
           def stackExists = sh(
             script: "openstack stack list -f value -c 'Stack Name' | grep -w ${env.STACK_NAME} || true",
             returnStdout: true
@@ -38,6 +39,7 @@ pipeline {
                 --parameter key_name=${params.KEY_NAME} \\
                 --parameter image=${params.IMAGE} \\
                 --parameter flavor=${params.FLAVOR} \\
+                --parameter network_name=${params.NETWORK_NAME} \\
                 ${env.STACK_NAME}
             """
           } else {
@@ -46,14 +48,13 @@ pipeline {
                 --parameter key_name=${params.KEY_NAME} \\
                 --parameter image=${params.IMAGE} \\
                 --parameter flavor=${params.FLAVOR} \\
+                --parameter network_name=${params.NETWORK_NAME} \\
                 ${env.STACK_NAME}
             """
           }
 
-          // Ждём завершения операции
           sh "openstack stack wait ${env.STACK_NAME}"
 
-          // Получаем IP сервера из вывода стека
           def serverIp = sh(
             script: "openstack stack output show ${env.STACK_NAME} server_ip -f value",
             returnStdout: true
