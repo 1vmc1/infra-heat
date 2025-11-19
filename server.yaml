@@ -1,33 +1,35 @@
-heat_template_version: 2016-10-14
+pipeline {
+  agent any
 
-description: >
-  Simple template to create a server for project deployment
+  environment {
+    OS_CLOUD = 'mycloud'
+    STACK_NAME = 'project-stack'
+  }
 
-parameters:
-  key_name:
-    type: string
-    description: Name of an existing keypair to enable SSH access
+  stages {
+    stage('Checkout') {
+      steps {
+        git 'git@github.com:1vmc1/infra-heat.git'
+      }
+    }
 
-  image:
-    type: string
-    description: Image ID or name to use for the server
-
-  flavor:
-    type: string
-    description: Flavor to use for the server
-
-resources:
-  my_server:
-    type: OS::Nova::Server
-    properties:
-      name: project-server
-      image: { get_param: image }
-      flavor: { get_param: flavor }
-      key_name: { get_param: key_name }
-      networks:
-        - network: 192.168.199.0  # замените на вашу сеть
-
-outputs:
+    stage('Deploy Stack') {
+      steps {
+        script {
+          sh """
+            openstack stack create -t server.yaml \\
+              --parameter key_name=vmc \\
+              --parameter image=ubuntu-22.04 \\
+              --parameter flavor=m1.small \\
+              ${STACK_NAME}
+          """
+          sh "openstack stack wait ${STACK_NAME}"
+          sh "openstack stack output show ${STACK_NAME} server_ip -f value"
+        }
+      }
+    }
+  }
+}
   server_ip:
     description: IP address of the created server
     value: { get_attr: [my_server, first_address] }
