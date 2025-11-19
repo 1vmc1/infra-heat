@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { label 'l8' }
 
   environment {
     OS_CLOUD = 'mycloud'
