@@ -2,31 +2,27 @@ pipeline {
   agent { label 'vmc2' }
 
   environment {
-    OS_CLOUD = 'mycloud'
+    OS_CLOUD  = 'mycloud'
     STACK_NAME = 'project-stack'
   }
 
   parameters {
-    string(name: 'KEY_NAME', defaultValue: 'vmc', description: 'SSH Key Name')
-    string(name: 'IMAGE', defaultValue: 'ubuntu-22.04', description: 'Image Name')
-    string(name: 'FLAVOR', defaultValue: 'm1.small', description: 'Flavor')
-    string(name: 'NETWORK_NAME', defaultValue: 'sutdents-net', description: 'OpenStack Network Name or ID')
+    string(name: 'KEY_NAME',       defaultValue: 'vmc',          description: 'SSH Key Name')
+    string(name: 'IMAGE',          defaultValue: 'ubuntu-22.04', description: 'Image Name')
+    string(name: 'FLAVOR',         defaultValue: 'm1.small',     description: 'Flavor')
+    string(name: 'NETWORK_NAME',   defaultValue: 'sutdents-net', description: 'OpenStack Network Name or ID')
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/1vmc1/infra-heat'
-      }
-    }
-
     stage('Deploy Stack') {
       steps {
         script {
           echo "Starting Deploy Stack stage"
 
+          // подробный вывод команд
           sh 'set -x'
 
+          // проверяем, есть ли уже стек
           def stackExists = sh(
             script: "openstack stack list -f value -c 'Stack Name' | grep -w ${env.STACK_NAME} || true",
             returnStdout: true
@@ -53,8 +49,10 @@ pipeline {
             """
           }
 
+          // ждём завершения операции
           sh "openstack stack wait ${env.STACK_NAME}"
 
+          // получаем IP из вывода стека
           def serverIp = sh(
             script: "openstack stack output show ${env.STACK_NAME} server_ip -f value",
             returnStdout: true
