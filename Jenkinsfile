@@ -2,15 +2,15 @@ pipeline {
   agent { label 'vmc2' }
 
   environment {
-    OS_CLOUD  = 'mycloud'
+    OS_CLOUD   = 'mycloud'
     STACK_NAME = 'project-stack'
   }
 
   parameters {
-    string(name: 'KEY_NAME',       defaultValue: 'vmc',          description: 'SSH Key Name')
-    string(name: 'IMAGE',          defaultValue: 'ununtu-22.04', description: 'Image Name')
-    string(name: 'FLAVOR',         defaultValue: 'm1.small',     description: 'Flavor')
-    string(name: 'NETWORK_NAME',   defaultValue: 'sutdents-net', description: 'OpenStack Network Name or ID')
+    string(name: 'KEY_NAME',       defaultValue: 'vmc',            description: 'SSH Key Name')
+    string(name: 'IMAGE',          defaultValue: 'ununtu-22.04',   description: 'Image Name (exact OpenStack name)')
+    string(name: 'FLAVOR',         defaultValue: 'm1.small',       description: 'Flavor')
+    string(name: 'NETWORK_NAME',   defaultValue: 'sutdents-net',   description: 'OpenStack Network Name or ID')
   }
 
   stages {
@@ -49,10 +49,35 @@ pipeline {
             """
           }
 
-          // ждём завершения операции
-          sh "openstack stack wait ${env.STACK_NAME}"
+          // ===== РУЧНОЕ ОЖИДАНИЕ СТАТУСА СТЕКА =====
+          sh """
+            STATUS=""
+            while true; do
+              STATUS=\$(openstack stack show ${env.STACK_NAME} -f value -c stack_status)
+              echo "Current stack status: \$STATUS"
 
-          // получаем IP из вывода стека
+              case "\$STATUS" in
+                *_IN_PROGRESS)
+                  sleep 10
+                  ;;
+                *_COMPLETE)
+                  echo "Stack ${env.STACK_NAME} completed successfully"
+                  break
+                  ;;
+                *_FAILED)
+                  echo "Stack ${env.STACK_NAME} FAILED. Showing failures:"
+                  openstack stack failures list ${env.STACK_NAME} || true
+                  exit 1
+                  ;;
+                *)
+                  echo "Unknown stack status: \$STATUS"
+                  break
+                  ;;
+              esac
+            done
+          """
+
+          // получаем IP из outputs (если стек успешен)
           def serverIp = sh(
             script: "openstack stack output show ${env.STACK_NAME} server_ip -f value",
             returnStdout: true
