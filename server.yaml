@@ -16,6 +16,10 @@ parameters:
     type: string
     description: Flavor to use for the server
 
+  network_name:
+    type: string
+    description: Network name or ID to attach to the server
+
 resources:
   my_server:
     type: OS::Nova::Server
@@ -25,13 +29,9 @@ resources:
       flavor: { get_param: flavor }
       key_name: { get_param: key_name }
       networks:
-        - network: sutdents-net  # замените на вашу сеть
+        - network: { get_param: network_name }
 
 outputs:
-  server_ip:
-    description: IP address of the created server
-    value: { get_attr: [my_server, first_address] }
-}
   server_ip:
     description: IP address of the created server
     value: { get_attr: [my_server, first_address] }
