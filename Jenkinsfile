@@ -8,7 +8,7 @@ pipeline {
 
   parameters {
     string(name: 'KEY_NAME',       defaultValue: 'vmc',          description: 'SSH Key Name')
-    string(name: 'IMAGE',          defaultValue: 'ubuntu-22.04', description: 'Image Name')
+    string(name: 'IMAGE',          defaultValue: 'ununtu-22.04', description: 'Image Name')
     string(name: 'FLAVOR',         defaultValue: 'm1.small',     description: 'Flavor')
     string(name: 'NETWORK_NAME',   defaultValue: 'sutdents-net', description: 'OpenStack Network Name or ID')
   }
